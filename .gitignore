@@ -183,6 +183,7 @@ fabric.properties
 
 # ignore large data files
 *json*
+setup.sh
 
 
 

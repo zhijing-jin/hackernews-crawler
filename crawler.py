@@ -186,6 +186,7 @@ class Sleeper:
 
     def sleep(self):
         if self.init:
+            self.init = False
             return
 
         import time
