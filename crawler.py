@@ -124,18 +124,19 @@ class HackerNewsPage:
 class HackerNewsData:
 
     def __init__(self, start_date='20190101', end_date='20190104'):
+        from tqdm import tqdm
         self.date_range = self.get_date_range(start_date, end_date)
+        self.pbar = tqdm(self.date_range)
+        self.desc = '{}~{}'.format(self.date_range[0].replace('-', ''),
+                                   self.date_range[-1].replace('-', '')[-4:])
+        self.pbar.set_description(self.desc)
+        self.pbar.refresh()
 
     def crawl_data(self, use_proxy=False):
-        from efficiency.log import show_time
-        show_time(
-            '[Info] {}~{}'.format(self.date_range[0], self.date_range[-1]))
-
-        for date in self.date_range:
+        for date in self.pbar:
             webpage = HackerNewsPage(date, page=1)
             stories = webpage.recursively_crawl(use_proxy=use_proxy)
-            print('[Info] {}, {}pages, {}stories'.format(date, webpage.page,
-                                                         len(stories)))
+
             storage.add_data(stories)
             storage.save_json()
         import pdb;
@@ -165,16 +166,22 @@ class Storage:
     def __init__(self, file='stories_2019.json'):
         import os
         import json
+        from efficiency.log import fwrite, show_time
 
         self.data = [{self.COMPLETED_COLL: []}]
         self.file = file
         if os.path.isfile(file):
             with open(file) as f:
-                self.data = json.load(f)
-                if self.COMPLETED_COLL not in self.data[0]:
-                    dates = {i['date'] for i in self.data}
-                    header = [{self.COMPLETED_COLL: sorted(list(dates))}]
-                    self.data = header + self.data
+                content = f.read()
+            fwrite(content, file + '.prev')
+            show_time(
+                '[Info] Previous data file exists. Made a backup at {}.prev'.format(file))
+
+            self.data = json.loads(content)
+            if self.COMPLETED_COLL not in self.data[0]:
+                dates = {i['date'] for i in self.data}
+                header = [{self.COMPLETED_COLL: sorted(list(dates))}]
+                self.data = header + self.data
 
         self.completed = set(self.data[0][self.COMPLETED_COLL])
 
@@ -296,7 +303,9 @@ class ProxyPool:
 
         url = 'https://google.com/'
         valid_proxies = set()
-        for proxy in tqdm(proxies):
+        tbar = tqdm(proxies)
+        tbar.set_description('Verifying proxies')
+        for proxy in tbar:
             try:
                 r = requests.get(url, proxies={"http": proxy, "https": proxy})
                 valid_proxies |= {proxy}
