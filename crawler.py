@@ -75,6 +75,8 @@ class HackerNewsPage:
 
         athing_elems = tree.xpath('//a[@class="storylink"]')
         subtext_elems = tree.xpath('//span[@class="score"]')
+        next_page = tree.xpath('//a[@class="morelink"]')
+        next_page = bool(next_page)
 
         for athing, subtext in zip(athing_elems, subtext_elems):
             title = athing.text
@@ -106,9 +108,7 @@ class HackerNewsPage:
 
             # etree.tostring(comment)
 
-        more_link = tree.xpath('//a[@class="morelink"]')
-
-        return bool(more_link)
+        return next_page
 
     def recursively_crawl(self):
         next_page = False
@@ -128,6 +128,10 @@ class HackerNewsData:
         self.date_range = self.get_date_range(start_date, end_date)
 
     def crawl_data(self):
+        from efficiency.log import show_time
+        show_time(
+            '[Info] {}~{}'.format(self.date_range[0], self.date_range[-1]))
+
         for date in self.date_range:
             webpage = HackerNewsPage(date, page=1)
             stories = webpage.recursively_crawl()
@@ -150,22 +154,35 @@ class HackerNewsData:
 
         date_range = []
         for single_date in daterange(start_date, end_date):
-            date_range.append(single_date.strftime("%Y-%m-%d"))
+            date = single_date.strftime("%Y-%m-%d")
+            if date not in storage.completed:
+                date_range.append(date)
         return date_range
 
 
 class Storage:
+    COMPLETED_COLL = '[Completed Collections]'
+
     def __init__(self, file='stories_2019.json'):
         import os
         import json
 
-        self.data = []
+        self.data = [{self.COMPLETED_COLL: []}]
         self.file = file
         if os.path.isfile(file):
             with open(file) as f:
                 self.data = json.load(f)
+                if self.COMPLETED_COLL not in self.data[0]:
+                    dates = {i['date'] for i in self.data}
+                    header = [{self.COMPLETED_COLL: sorted(list(dates))}]
+                    self.data = header + self.data
+
+        self.completed = set(self.data[0][self.COMPLETED_COLL])
 
     def add_data(self, new_data):
+        date = new_data[-1]['date']
+        storage.data[0][self.COMPLETED_COLL].append(date)
+
         storage.data.extend(new_data)
 
     def save_json(self):
