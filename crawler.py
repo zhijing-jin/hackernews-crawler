@@ -26,7 +26,6 @@ class HackerNewsPage:
         return self.url
 
     def set_html(self, use_proxy=False):
-        import time
         import requests
         from efficiency.log import show_time
 
@@ -110,11 +109,11 @@ class HackerNewsPage:
 
         return next_page
 
-    def recursively_crawl(self):
+    def recursively_crawl(self, use_proxy=False):
         next_page = False
         for _ in range(100):
             self.set_url(next_page=next_page)
-            html = self.set_html()
+            html = self.set_html(use_proxy=use_proxy)
             if html == self.INVALID_HTML: break
             next_page = self.parse_html()
             if not next_page: break
@@ -127,14 +126,14 @@ class HackerNewsData:
     def __init__(self, start_date='20190101', end_date='20190104'):
         self.date_range = self.get_date_range(start_date, end_date)
 
-    def crawl_data(self):
+    def crawl_data(self, use_proxy=False):
         from efficiency.log import show_time
         show_time(
             '[Info] {}~{}'.format(self.date_range[0], self.date_range[-1]))
 
         for date in self.date_range:
             webpage = HackerNewsPage(date, page=1)
-            stories = webpage.recursively_crawl()
+            stories = webpage.recursively_crawl(use_proxy=use_proxy)
             print('[Info] {}, {}pages, {}stories'.format(date, webpage.page,
                                                          len(stories)))
             storage.add_data(stories)
@@ -237,6 +236,7 @@ class ProxyPool:
         proxies = self.get_proxies(proxy_file)
         self.proxies = self.verify_proxies(proxies)
         self.proxy_pool = cycle(self.proxies)
+        self.proxy_file = proxy_file
         self.bad_proxy_cnt = {}
         self.bad_proxy_cnt_limit = 5
         self.start_time = time()
@@ -247,7 +247,8 @@ class ProxyPool:
 
         if (time() - self.start_time > self.time_limit) or len(
                 self.proxies) < 5:
-            self.__init__()
+            if not self.proxy_file:
+                self.__init__()
         return next(self.proxy_pool)
 
     def __len__(self):
@@ -293,7 +294,7 @@ class ProxyPool:
 
         print('[Info] Checking proxies:', proxies)
 
-        url = 'https://free-proxy-list.net/'
+        url = 'https://google.com/'
         valid_proxies = set()
         for proxy in tqdm(proxies):
             try:
@@ -359,4 +360,4 @@ if __name__ == '__main__':
 
     storage = Storage()
     hn_data = HackerNewsData(start_date=args.start_date, end_date=args.end_date)
-    stories = hn_data.crawl_data()
+    stories = hn_data.crawl_data(use_proxy=args.use_proxy)
