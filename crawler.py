@@ -133,12 +133,17 @@ class HackerNewsData:
         self.pbar.refresh()
 
     def crawl_data(self, use_proxy=False):
+        total_pages = 0
         for date in self.pbar:
             webpage = HackerNewsPage(date, page=1)
             stories = webpage.recursively_crawl(use_proxy=use_proxy)
 
             storage.add_data(stories)
             storage.save_json()
+
+            total_pages += webpage.page
+            self.pbar.set_description('{} ({})'.format(self.desc, total_pages))
+            self.pbar.refresh()
         import pdb;
         pdb.set_trace()
 
@@ -175,7 +180,8 @@ class Storage:
                 content = f.read()
             fwrite(content, file + '.prev')
             show_time(
-                '[Info] Previous data file exists. Made a backup at {}.prev'.format(file))
+                '[Info] Previous data file exists. Made a backup at {}.prev'.format(
+                    file))
 
             self.data = json.loads(content)
             if self.COMPLETED_COLL not in self.data[0]:
