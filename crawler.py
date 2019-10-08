@@ -192,6 +192,7 @@ class Storage:
         self.completed = set(self.data[0][self.COMPLETED_COLL])
 
     def add_data(self, new_data):
+        if not new_data: return
         date = new_data[-1]['date']
         storage.data[0][self.COMPLETED_COLL].append(date)
 
