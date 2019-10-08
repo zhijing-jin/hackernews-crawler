@@ -367,6 +367,6 @@ if __name__ == '__main__':
         "Mozilla/4.0 (compatible; MSIE 7.0b; Windows NT 5.2; .NET CLR 1.1.4322; .NET CLR 2.0.50727; InfoPath.2; .NET CLR 3.0.04506.30)",
     ])
 
-    storage = Storage()
+    storage = Storage(file='stories_{}.json'.format(args.start_date))
     hn_data = HackerNewsData(start_date=args.start_date, end_date=args.end_date)
     stories = hn_data.crawl_data(use_proxy=args.use_proxy)
