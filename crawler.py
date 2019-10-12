@@ -115,6 +115,11 @@ class HackerNewsPage:
             self.set_url(next_page=next_page)
             html = self.set_html(use_proxy=use_proxy)
             if html == self.INVALID_HTML: break
+            try:
+                self.html
+            except:
+                import pdb;
+                pdb.set_trace()
             next_page = self.parse_html()
             if not next_page: break
 
@@ -122,15 +127,17 @@ class HackerNewsPage:
 
 
 class HackerNewsData:
-
     def __init__(self, start_date='20190101', end_date='20190104'):
         from tqdm import tqdm
+
         self.date_range = self.get_date_range(start_date, end_date)
         self.pbar = tqdm(self.date_range)
-        self.desc = '{}~{}'.format(self.date_range[0].replace('-', ''),
-                                   self.date_range[-1].replace('-', '')[-4:])
-        self.pbar.set_description(self.desc)
-        self.pbar.refresh()
+        if self.date_range:
+            self.desc = '{}~{}'.format(
+                self.date_range[0].replace('-', ''),
+                self.date_range[-1].replace('-', '')[-4:])
+            self.pbar.set_description(self.desc)
+            self.pbar.refresh()
 
     def crawl_data(self, use_proxy=False):
         total_pages = 0

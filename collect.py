@@ -46,18 +46,19 @@ def check():
     for item in data.values():
         titles.append(item['title'])
 
-
     get_most_common_in_list(titles, most_common_n=10)
 
-    good_data = {k:v for k,v in data.items() if 'nytimes' in v['long_url']}
+    good_data = {k: v for k, v in data.items() if 'nytimes' in v['long_url']}
     show_var(['len(good_data)'])
     import pdb;
     pdb.set_trace()
+
 
 def check_time():
     from datetime import datetime
     timestamp = 1564624227
     datetime.fromtimestamp(timestamp)
+
 
 def main():
     import os
@@ -66,18 +67,26 @@ def main():
 
     data = []
     dir = '/home/ubuntu/proj/1908_clickbait/hacknews'
+    output_json = 'stories.json'
+    output_zip = 'stories.zip'
     file_filter = lambda f: f.startswith('stories_') and f.endswith('.json')
 
     fm = FileManager(dir=dir, file_filter=file_filter)
     print(json.dumps(fm.files, indent=4))
-    import pdb;pdb.set_trace()
     for file in fm.files:
         with open(file) as f: content = json.load(f)
         data.extend(content[1:])
         # show_var(
         #     ["file", "len(content)", "len(data)", "list(content.keys())[:3]"])
-    import pdb;pdb.set_trace()
-    fwrite(json.dumps(data, indent=4), os.path.join(dir, 'stories.json'))
+    import pdb;
+    pdb.set_trace()
+    len(data)
+    fwrite(json.dumps(data, indent=4), os.path.join(dir, output_json))
+    
+    cmd = 'zip {output_zip} {output_json} \n' \
+          '~/proj/tools/gdrive-linux-x64 upload {output_zip}' \
+        .format(output_json='stories.json', output_zip='stories.zip')
+    shell(cmd)
 
 
 if __name__ == '__main__':
