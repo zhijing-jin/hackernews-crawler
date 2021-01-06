@@ -35,30 +35,25 @@ def get_most_common_in_list(ls, most_common_n=1):
     return cnt.most_common(most_common_n)
 
 
-def check():
-    import json
-
-    file = '/home/ubuntu/proj/1908_clickbait/bitly/bitly.json'
-    with open(file) as f:
-        data = json.load(f)
-    show_var(['len(data)', 'list(data.items())[99]'])
-    titles = []
-    for item in data.values():
-        titles.append(item['title'])
-
-    get_most_common_in_list(titles, most_common_n=10)
-
-    good_data = {k: v for k, v in data.items() if 'nytimes' in v['long_url']}
-    show_var(['len(good_data)'])
-    import pdb;
-    pdb.set_trace()
-
-
 def check_time():
     from datetime import datetime
     timestamp = 1564624227
     datetime.fromtimestamp(timestamp)
 
+def get_date_range(start_date, end_date):
+    import datetime
+    start_date = datetime.datetime.strptime(start_date, '%Y-%m-%d')
+    end_date = datetime.datetime.strptime(end_date, '%Y-%m-%d')
+
+    def daterange(start_date, end_date):
+        for n in range(int((end_date - start_date).days)):
+            yield start_date + datetime.timedelta(n)
+
+    date_range = []
+    for single_date in daterange(start_date, end_date):
+        date = single_date.strftime("%Y-%m-%d")
+        date_range.append(date)
+    return date_range
 
 def main():
     import os
@@ -66,6 +61,7 @@ def main():
     from efficiency.log import fwrite
 
     data = []
+    dates = []
     dir = '/home/ubuntu/proj/1908_clickbait/hacknews'
     output_json = 'stories.json'
     output_zip = 'stories.zip'
@@ -76,17 +72,26 @@ def main():
     for file in fm.files:
         with open(file) as f: content = json.load(f)
         data.extend(content[1:])
+        dates.extend(list(content[0].values())[0])
         # show_var(
         #     ["file", "len(content)", "len(data)", "list(content.keys())[:3]"])
     import pdb;
     pdb.set_trace()
-    len(data)
+    len(data), len(dates)
+    min(dates), max(dates)
+    date_range = get_date_range(min(dates), max(dates))
+    set(date_range) - set(dates)
+
+    uniq_data = set(tuple(a.items()) for a in data)
+    data = [dict(i) for i in uniq_data]
+    data = sorted(data, key=lambda x: x['date'] + x['title'])
     fwrite(json.dumps(data, indent=4), os.path.join(dir, output_json))
-    
-    cmd = 'zip {output_zip} {output_json} \n' \
-          '~/proj/tools/gdrive-linux-x64 upload {output_zip}' \
-        .format(output_json='stories.json', output_zip='stories.zip')
-    shell(cmd)
+
+    cmd = 'cd {dir}; zip {output_zip} {output_json} \n' \
+          ' ~/proj/tools/gdrive-linux-x64 upload {output_zip}'        \
+        .format(dir=dir, output_json=output_json, output_zip=output_zip)
+    print('[Info] Executing command:', cmd)
+    os.system(cmd)
 
 
 if __name__ == '__main__':
